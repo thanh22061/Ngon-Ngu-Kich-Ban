@@ -34,9 +34,8 @@ npm install
 ```
 
 ### 2. Khởi tạo Cơ sở dữ liệu trên Microsoft SQL Server
-Mở **SQL Server Management Studio (SSMS)** kết nối tới `.\SQLEXPRESS` (hoặc dùng `sqlcmd`) và chạy lần lượt 2 file script trong thư mục `prisma/`:
-1. `prisma/sportzone_sqlserver.sql` — Tạo database `sportzone_db`, 14 bảng dữ liệu và dữ liệu gốc.
-2. `prisma/sportzone_more_data.sql` — Nạp mở rộng 20 cụm sân, 96 sân con, tọa độ GPS bản đồ, 193 bảng giá và đơn đặt mẫu.
+Mở **SQL Server Management Studio (SSMS)** kết nối tới `.\SQLEXPRESS` và chạy file script duy nhất:
+- `prisma/sportzone_sqlserver.sql` — Tự động tạo database `sportzone_db`, 14 bảng dữ liệu, 20 cụm sân, 96 sân con, tọa độ GPS bản đồ, 193 bảng giá và đơn đặt mẫu.
 
 Hoặc chạy bằng lệnh tự động:
 ```bash
