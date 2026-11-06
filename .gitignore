@@ -14,3 +14,4 @@ Thumbs.db
 # Uploads (giữ cấu trúc thư mục)
 uploads/*
 !uploads/.gitkeep
+
