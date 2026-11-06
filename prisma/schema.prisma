@@ -1,0 +1,268 @@
+// Prisma Schema for SPORTZONE Platform
+// Database: Microsoft SQL Server (SSMS)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// 1. ROLES & USERS
+// -------------------------------------------------------------
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(50) // 'CUSTOMER', 'OWNER', 'ADMIN'
+  description String?  @db.NVarChar(255)
+  users       User[]
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("roles")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  roleId        Int            @map("role_id")
+  role          Role           @relation(fields: [roleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fullName      String         @map("full_name") @db.NVarChar(100)
+  email         String         @unique @db.VarChar(100)
+  phone         String         @unique @db.VarChar(20)
+  password      String         @db.VarChar(255)
+  avatar        String?        @db.VarChar(255)
+  status        String         @default("ACTIVE") @db.VarChar(20) // 'ACTIVE', 'INACTIVE', 'BANNED'
+  venues        Venue[]        @relation("OwnerVenues")
+  bookings      Booking[]
+  reviews       Review[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@index([roleId])
+  @@index([email])
+  @@index([phone])
+  @@map("users")
+}
+
+// -------------------------------------------------------------
+// 2. SPORTS, VENUES, COURTS & FACILITIES
+// -------------------------------------------------------------
+
+model Sport {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.NVarChar(100) // Pickleball, Cầu lông, Bóng đá mini...
+  slug        String   @unique @db.VarChar(100)
+  description String?  @db.NVarChar(1000)
+  icon        String?  @db.NVarChar(255)
+  venues      Venue[]
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("sports")
+}
+
+model Venue {
+  id              Int              @id @default(autoincrement())
+  ownerId         Int              @map("owner_id")
+  owner           User             @relation("OwnerVenues", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sportId         Int              @map("sport_id")
+  sport           Sport            @relation(fields: [sportId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  name            String           @db.NVarChar(150)
+  slug            String           @unique @db.VarChar(150)
+  address         String           @db.NVarChar(255)
+  district        String           @db.NVarChar(100)
+  city            String           @default("Hà Nội") @db.NVarChar(100)
+  description     String?          @db.NVarChar(2000)
+  phone           String           @db.VarChar(20)
+  openTime        String           @default("06:00") @map("open_time") @db.VarChar(10)
+  closeTime       String           @default("23:00") @map("close_time") @db.VarChar(10)
+  ratingAvg       Float            @default(5.0) @map("rating_avg")
+  reviewCount     Int              @default(0) @map("review_count")
+  status          String           @default("PENDING") @db.VarChar(20) // 'PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'
+  courts          Court[]
+  venueFacilities VenueFacility[]
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@index([ownerId])
+  @@index([sportId])
+  @@index([district])
+  @@index([status])
+  @@map("venues")
+}
+
+model Court {
+  id          Int          @id @default(autoincrement())
+  venueId     Int          @map("venue_id")
+  venue       Venue        @relation(fields: [venueId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  name        String       @db.NVarChar(100) // "Sân 1 VIP", "Sân 2"...
+  courtType   String       @default("Standard") @map("court_type") @db.NVarChar(100)
+  isCovered   Boolean      @default(true) @map("is_covered")
+  status      String       @default("ACTIVE") @db.VarChar(20) // 'ACTIVE', 'MAINTENANCE', 'INACTIVE'
+  images      CourtImage[]
+  priceRules  PriceRule[]
+  bookings    Booking[]
+  reviews     Review[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@index([venueId])
+  @@map("courts")
+}
+
+model CourtImage {
+  id        Int      @id @default(autoincrement())
+  courtId   Int?     @map("court_id")
+  court     Court?   @relation(fields: [courtId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  imageUrl  String   @map("image_url") @db.VarChar(255)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([courtId])
+  @@map("court_images")
+}
+
+model Facility {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.NVarChar(100)
+  icon            String?          @db.VarChar(100)
+  venueFacilities VenueFacility[]
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  @@map("facilities")
+}
+
+model VenueFacility {
+  id         Int      @id @default(autoincrement())
+  venueId    Int      @map("venue_id")
+  venue      Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  facilityId Int      @map("facility_id")
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([venueId, facilityId])
+  @@index([venueId])
+  @@index([facilityId])
+  @@map("venue_facilities")
+}
+
+// -------------------------------------------------------------
+// 3. PRICING RULES
+// -------------------------------------------------------------
+
+model PriceRule {
+  id        Int      @id @default(autoincrement())
+  courtId   Int      @map("court_id")
+  court     Court    @relation(fields: [courtId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  name      String   @default("Khung giờ thường") @db.NVarChar(100)
+  startTime String   @map("start_time") @db.VarChar(10) // "06:00"
+  endTime   String   @map("end_time") @db.VarChar(10)   // "17:00"
+  price     Decimal  @db.Decimal(10, 2)
+  isPeak    Boolean  @default(false) @map("is_peak")
+  dayOfWeek Int?     @map("day_of_week")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([courtId])
+  @@map("price_rules")
+}
+
+// -------------------------------------------------------------
+// 4. BOOKINGS, PAYMENTS, REVIEWS, COUPONS & NOTIFICATIONS
+// -------------------------------------------------------------
+
+model Booking {
+  id            Int       @id @default(autoincrement())
+  bookingCode   String    @unique @map("booking_code") @db.VarChar(50)
+  userId        Int       @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  courtId       Int       @map("court_id")
+  court         Court     @relation(fields: [courtId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bookingDate   DateTime  @map("booking_date") @db.Date
+  startTime     String    @map("start_time") @db.VarChar(10) // "18:00"
+  endTime       String    @map("end_time") @db.VarChar(10)   // "19:00"
+  totalAmount   Decimal   @map("total_amount") @db.Decimal(10, 2)
+  depositAmount Decimal   @map("deposit_amount") @db.Decimal(10, 2)
+  note          String?   @db.NVarChar(1000)
+  status        String    @default("PENDING") @db.VarChar(20) // 'PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'REJECTED'
+  couponId      Int?      @map("coupon_id")
+  coupon        Coupon?   @relation(fields: [couponId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payment       Payment?
+  review        Review?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([courtId, bookingDate, startTime])
+  @@index([userId])
+  @@index([courtId])
+  @@index([bookingDate])
+  @@index([status])
+  @@map("bookings")
+}
+
+model Payment {
+  id            Int       @id @default(autoincrement())
+  bookingId     Int       @unique @map("booking_id")
+  booking       Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  amount        Decimal   @db.Decimal(10, 2)
+  paymentMethod String    @default("VNPAY") @map("payment_method") @db.VarChar(30) // 'VNPAY', 'CASH', 'BANK_TRANSFER'
+  transactionId String?   @map("transaction_id") @db.VarChar(100)
+  status        String    @default("UNPAID") @db.VarChar(20) // 'UNPAID', 'PAID', 'FAILED', 'REFUNDED'
+  paymentTime   DateTime? @map("payment_time")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([bookingId])
+  @@index([status])
+  @@map("payments")
+}
+
+model Review {
+  id        Int       @id @default(autoincrement())
+  bookingId Int       @unique @map("booking_id")
+  booking   Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  userId    Int       @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  courtId   Int       @map("court_id")
+  court     Court     @relation(fields: [courtId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rating    Int       @default(5)
+  comment   String    @db.NVarChar(1000)
+  reply     String?   @db.NVarChar(1000)
+  replyAt   DateTime? @map("reply_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([courtId])
+  @@map("reviews")
+}
+
+model Coupon {
+  id              Int       @id @default(autoincrement())
+  code            String    @unique @db.VarChar(50)
+  discountPercent Int       @map("discount_percent")
+  maxDiscount     Decimal?  @map("max_discount") @db.Decimal(10, 2)
+  minOrderAmount  Decimal?  @map("min_order_amount") @db.Decimal(10, 2)
+  validFrom       DateTime  @default(now()) @map("valid_from")
+  validUntil      DateTime  @map("valid_until")
+  usageLimit      Int       @default(100) @map("usage_limit")
+  usedCount       Int       @default(0) @map("used_count")
+  isActive        Boolean   @default(true) @map("is_active")
+  bookings        Booking[]
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("coupons")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  title     String   @db.NVarChar(150)
+  message   String   @db.NVarChar(1000)
+  type      String   @default("BOOKING") @db.VarChar(50)
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("notifications")
+}

@@ -1,0 +1,131 @@
+/* Custom Styles for SportZone Platform */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --primary: #059669;
+  --primary-hover: #047857;
+  --secondary: #0f172a;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Hero Banner Gradient */
+.hero-pattern {
+  background: linear-gradient(135deg, #0f172a 0%, #064e3b 60%, #059669 100%);
+}
+
+/* Slot Matrix Styles */
+.slot-btn {
+  transition: all 0.15s ease-in-out;
+  user-select: none;
+}
+
+.slot-btn.available:hover {
+  border-color: #059669;
+  background-color: #ecfdf5;
+  transform: translateY(-1px);
+}
+
+.slot-btn.selected {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+  border-color: #047857 !important;
+  box-shadow: 0 4px 10px -2px rgba(5, 150, 105, 0.4);
+}
+
+.slot-btn.booked {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+/* Card hover animation */
+.venue-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.venue-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.12);
+}
+
+/* Toast Notification Animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-enter {
+  animation: slideInRight 0.25s ease-out forwards;
+}
+
+/* Custom Leaflet Map Markers & Popups */
+.sz-map-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 11px;
+  border-radius: 9999px;
+  border: 2px solid #10b981;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.35);
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.sz-map-marker:hover,
+.sz-map-marker.active {
+  background: #059669;
+  border-color: #ffffff;
+  transform: translate(-50%, -108%) scale(1.08);
+  z-index: 999 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 16px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  box-shadow: 0 14px 28px -6px rgba(15, 23, 42, 0.22) !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: 270px !important;
+}
+
+

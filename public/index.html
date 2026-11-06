@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SportZone — Nền tảng Đặt Sân Thể Thao Trực Tuyến</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+
+  <!-- TOP NAVBAR -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-8">
+        <a href="#" onclick="app.navigate('home'); return false;" class="flex items-center gap-2.5 group">
+          <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-extrabold text-xl shadow-sm group-hover:bg-brand-700 transition">
+            SZ
+          </div>
+          <div>
+            <span class="text-xl font-extrabold tracking-tight text-slate-900">Sport<span class="text-brand-600">Zone</span></span>
+            <span class="block text-[10px] font-medium text-slate-500 -mt-1">ĐẶT SÂN TRỰC TUYẾN</span>
+          </div>
+        </a>
+
+        <!-- Main Nav Links -->
+        <nav class="hidden md:flex items-center gap-1" id="main-nav">
+          <button onclick="app.navigate('home')" data-nav="home" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold text-brand-700 bg-brand-50">
+            Trang chủ & Cụm sân
+          </button>
+          <button onclick="app.openMapExplorer()" data-nav="map" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5">
+            <span>🗺️</span><span>Bản đồ sân</span>
+          </button>
+          <button onclick="app.navigate('my-bookings')" data-nav="my-bookings" id="nav-my-bookings" class="nav-btn hidden px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+            Lịch đặt của tôi
+          </button>
+          <button onclick="app.navigate('owner')" data-nav="owner" id="nav-owner" class="nav-btn hidden px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+            Quản lý Cụm sân (Chủ sân)
+          </button>
+          <button onclick="app.navigate('admin')" data-nav="admin" id="nav-admin" class="nav-btn hidden px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+            Quản trị hệ thống (Admin)
+          </button>
+        </nav>
+      </div>
+
+      <!-- Right User Controls -->
+      <div class="flex items-center gap-3">
+        <!-- Connection Badge -->
+        <div id="api-status-badge" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>SQL Server Ready</span>
+        </div>
+
+        <!-- Notification Bell (Logged in) -->
+        <div id="notif-wrapper" class="relative hidden">
+          <button onclick="app.toggleNotifications()" class="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition" title="Thông báo">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span id="notif-badge" class="hidden absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+          </button>
+
+          <!-- Notification Dropdown -->
+          <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50">
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <span class="font-bold text-sm text-slate-800">Thông báo của bạn</span>
+              <button onclick="app.markAllNotificationsRead()" class="text-xs text-brand-600 hover:underline font-medium">Đánh dấu đã đọc tất cả</button>
+            </div>
+            <div id="notif-list" class="max-h-80 overflow-y-auto divide-y divide-slate-100"></div>
+          </div>
+        </div>
+
+        <!-- Guest Buttons -->
+        <div id="guest-actions" class="flex items-center gap-2">
+          <button onclick="app.openAuthModal('login')" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">
+            Đăng nhập
+          </button>
+          <button onclick="app.openAuthModal('register')" class="px-4 py-2 rounded-lg text-sm font-semibold bg-brand-600 text-white hover:bg-brand-700 shadow-sm transition">
+            Đăng ký
+          </button>
+        </div>
+
+        <!-- Logged-in User Profile -->
+        <div id="user-actions" class="hidden items-center gap-3">
+          <button onclick="app.openProfileModal()" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition text-left">
+            <div id="user-avatar" class="w-8 h-8 rounded-full bg-brand-600 text-white font-bold text-sm flex items-center justify-center">
+              U
+            </div>
+            <div class="hidden sm:block">
+              <div id="user-name" class="text-xs font-bold text-slate-800 leading-tight">Người dùng</div>
+              <div id="user-role-badge" class="text-[10px] font-semibold text-brand-600">CUSTOMER</div>
+            </div>
+          </button>
+          <button onclick="app.logout()" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition">
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main id="app-content" class="flex-1"></main>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 text-slate-400 py-10 border-t border-slate-800 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div>
+        <div class="flex items-center gap-2.5 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-extrabold">SZ</div>
+          <span class="text-lg font-bold text-white">SportZone Vietnam</span>
+        </div>
+        <p class="text-sm text-slate-400 leading-relaxed">
+          Hệ thống đặt sân thể thao trực tuyến (Pickleball, Cầu lông, Bóng đá mini) kết nối Microsoft SQL Server, chống trùng lịch thời gian thực và thanh toán VNPay Sandbox.
+        </p>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-white uppercase tracking-wider mb-3">Tài khoản Demo nhanh</h4>
+        <div class="space-y-1.5 text-xs">
+          <p><span class="text-emerald-400 font-semibold">Khách hàng:</span> son.nguyen@gmail.com / password123</p>
+          <p><span class="text-amber-400 font-semibold">Chủ sân:</span> epu.arena@gmail.com / password123</p>
+          <p><span class="text-sky-400 font-semibold">Quản trị viên:</span> admin@sportzone.vn / password123</p>
+        </div>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-white uppercase tracking-wider mb-3">Thông tin Học phần</h4>
+        <p class="text-xs leading-relaxed">
+          Đề tài: Website Đặt Sân Thể Thao Trực Tuyến<br />
+          Học phần: Ngôn ngữ kịch bản — Khoa CNTT, Trường Đại học Điện Lực (EPU)
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL CONTAINER -->
+  <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div id="modal-body" class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"></div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- SCRIPTS -->
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
